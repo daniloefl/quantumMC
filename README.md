@@ -1,7 +1,11 @@
 # quantumMC
 
-Small project to illustrate how a diffuse and a variational MCMC
+Small project to illustrate how a diffuse MCMC
 can be made to solve the Schroedinger equation.
+
+It creates an interface with Python and allows one to use Python
+to steer the MCMC C++ code.
+Take a look at examples/test.py, for instance.
 
 # Compilation
 

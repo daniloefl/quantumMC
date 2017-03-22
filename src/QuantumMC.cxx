@@ -7,6 +7,13 @@
 #include <tuple>
 #include <cstdlib>
 #include <boost/range/irange.hpp>
+#include <boost/python/exec.hpp>
+#include <boost/python/extract.hpp>
+#include <sstream>
+#include <string>
+#include <iomanip>
+
+#include <Python.h>
 
 #include "QuantumMC.h"
 
@@ -17,7 +24,12 @@ random_device r;
 mt19937_64 rEngine(r());
 normal_distribution<double> rGaus(0.0, 1.0);
 
-QuantumMC::QuantumMC(double xmin, double xmax, double dx, int NT, int reqSteps) {
+QuantumMC::QuantumMC(std::string potentialName, double xmin, double xmax, double dx, int NT, int reqSteps) {
+  Py_Initialize();
+
+  // name of the Python function holding the potential
+  m_potentialName = potentialName;
+
   // set number of required steps
   m_reqSteps = reqSteps;
 
@@ -92,7 +104,12 @@ void QuantumMC::clean() {
 }
 
 double QuantumMC::V(pos r) {
-  return 0.5*(pow(r[0], 2)); // + pow(r[1], 2) + pow(r[2], 2));
+  //return 0.5*(pow(r[0], 2)); // + pow(r[1], 2) + pow(r[2], 2));
+  std::stringstream ss;
+  ss << m_potentialName << "(" << setprecision(17) << r[0] << ")";
+  boost::python::object V_obj = boost::python::eval(ss.str().c_str());
+  double V_double = boost::python::extract<double>(V_obj);
+  return V_double;
 }
 
 void QuantumMC::step(int n) {
@@ -218,6 +235,13 @@ python::list QuantumMC::getPsi() {
   }
   l.append(x);
   l.append(psi);
+  return l;
+}
+
+python::list QuantumMC::getEnergy() {
+  python::list l;
+  l.append(eMean());
+  l.append(eError());
   return l;
 }
 

@@ -30,9 +30,13 @@ class QuantumMC {
   public:
 
     /// \brief Constructor with maximum time and number of MCMC steps required as inputs.
-    /// \param NT
+    /// \param potentialName Name of the Python function called with a single double parameter that returns the value of the potential at a certain point
+    /// \param xmin Minimum value of the X axis.
+    /// \param xmax Maximum value of the X axis.
+    /// \param dx Delta X.
+    /// \param NT Number of walkers
     /// \param reqSteps Number of steps required from the MCMC
-    QuantumMC(double xmin=-5, double xmax=5, double dx=0.1, int NT = 300, int reqSteps = 4000);
+    QuantumMC(std::string potentialName, double xmin=-5, double xmax=5, double dx=0.1, int NT = 300, int reqSteps = 4000);
 
     /// \brief Set minimum x
     /// \param xmin Minimum value of x
@@ -77,7 +81,13 @@ class QuantumMC {
     /// \return List of tuples (x, psi(x))
     boost::python::list getPsi();
 
+    boost::python::list getEnergy();
+
   private:
+    /// Name of the potential function in Python
+    std::string m_potentialName;
+
+
     /// Solution of the diffusion equation: the wave function
     std::vector<double> m_psi;
 
