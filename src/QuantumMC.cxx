@@ -48,10 +48,10 @@ QuantumMC::QuantumMC(int NT, int reqSteps) {
 
   // now create the x position of the walkers
   uniform_real_distribution<double> rFlat5(-0.5, 0.5);
-  for (int i : irange(0, m_N)) {
+  for (int i : irange<int>(0, m_N)) {
     m_x[i] = pos();
     // set their positions randomly close to zero
-    for (int d : irange(0, DIM)) {
+    for (int d : irange<int>(0, DIM)) {
       m_x[i][d] = rFlat5(rEngine);
     }
     m_alive[i] = true; // all are alive
@@ -77,7 +77,7 @@ double QuantumMC::V(pos r) {
 void QuantumMC::step(int n) {
   uniform_real_distribution<double> rFlat(0, 1);
   // shift walker
-  for (int i : irange(0, DIM)) {
+  for (int i : irange<int>(0, DIM)) {
     m_x[n][i] += sqrt(m_dt)*rGaus(rEngine); // shifts walker by a gaussian with width sqrt(delta t): diffusion!
   }
   // change in effective potential energy V - E causes the walker to die with certain probability
@@ -90,8 +90,8 @@ void QuantumMC::step(int n) {
   if (survivors-1 > 0) {
     m_x.resize(m_N+(survivors-1));
     m_alive.resize(m_N+(survivors-1));
-    for (int i : irange(0, survivors - 1)) {
-      for (int d : irange(0, DIM))
+    for (int i : irange<int>(0, survivors - 1)) {
+      for (int d : irange<int>(0, DIM))
         m_x[m_N][d] = m_x[n][d];
 
       m_alive[m_N] = true;
@@ -110,12 +110,12 @@ void QuantumMC::step(int n) {
 
 void QuantumMC::MC() {
   int N0 = m_N; // original number of walkers
-  for (int i : irange(0, N0)) step(i); // make N0 MCMC steps
+  for (int i : irange<int>(0, N0)) step(i); // make N0 MCMC steps
 
   // now count the number of alive walkers
   // this also cleans up the vectors removing the dead walkers from the list
   int j = 0;
-  for (int i : irange(0, m_N)) {
+  for (int i : irange<int>(0, m_N)) {
     if (m_alive[i] && i != j) {
       m_x[j] = m_x[i];
       m_alive[j] = m_alive[i];
@@ -130,10 +130,10 @@ void QuantumMC::MC() {
   m_sumE += m_E0;
   m_sumE2 += m_E0*m_E0;
   // finally, histogram in this step for each walker
-  for (int i : irange(0, m_N)) {
+  for (int i : irange<int>(0, m_N)) {
     // find out the position of each walker
     double r2 = 0;
-    for (int d : irange(0, DIM)) {
+    for (int d : irange<int>(0, DIM)) {
       r2 += pow(m_x[i][d], 2);
     }
     // find the index of the walker in psi
@@ -147,7 +147,7 @@ void QuantumMC::MC() {
 
 void QuantumMC::thermalise() {
   // just do 20% of the requested steps to initialise walkers to something
-  for (int i : irange(0, int(0.2*m_reqSteps))) {
+  for (int i : irange<int>(0, int(0.2*m_reqSteps))) {
     MC();
   }
 }
@@ -155,7 +155,7 @@ void QuantumMC::thermalise() {
 void QuantumMC::run() {
   thermalise(); // initialise walkers with something close to the final distribution
   clean(); // clean up results but keep walkers in the thermalised positions
-  for (int i : irange(0, m_reqSteps)) { // now do the requested MCMC steps
+  for (int i : irange<int>(0, m_reqSteps)) { // now do the requested MCMC steps
     MC();
   }
 }
@@ -173,7 +173,7 @@ double QuantumMC::eError() {
 double QuantumMC::psiNorm() {
   double n = 0;
   // get the sum of |psi|^2 delta x to estimate integral |psi|^2 dx
-  for (int i : irange(0, m_psi.size())) n += pow(i*m_dx, DIM-1)*pow(m_psi[i], 2)*m_dx;
+  for (int i : irange<int>(0, (int) m_psi.size())) n += pow(i*m_dx, DIM-1)*pow(m_psi[i], 2)*m_dx;
   return n;
 }
 
@@ -183,7 +183,7 @@ void QuantumMC::write(const string &f) {
   ff << "# $E = " << eMean() << " \\pm " << eError() << "$" << endl;
   ff << "# r          psi" << endl;
   double norm = psiNorm();
-  for (int i : irange(0, m_psi.size())) {
+  for (int i : irange<int>(0, (int) m_psi.size())) {
     //ff << i*m_dx + m_xmin << "    " << pow(i*m_dx, DIM-1)*pow(m_psi[i], 2)/norm << endl;
     ff << i*m_dx + m_xmin << "    " << m_psi[i]/sqrt(norm) << endl;
   }

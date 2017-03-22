@@ -30,7 +30,7 @@ class QuantumMC {
     /// \brief Constructor with maximum time and number of MCMC steps required as inputs.
     /// \param NT
     /// \param reqSteps Number of steps required from the MCMC
-    WF(int NT = 10000, int reqSteps = 4000);
+    QuantumMC(int NT = 10000, int reqSteps = 4000);
 
     /// \brief Returns the value of the potential energy in position r
     /// \param r The position where to calculate the potential energy
