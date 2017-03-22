@@ -20,6 +20,8 @@
 #include <cstdlib>
 #include <boost/range/irange.hpp>
 #include <string>
+#include <boost/python/list.hpp>
+#include <boost/python/tuple.hpp>
 
 #define DIM 1
 typedef std::array<double, DIM> pos;
@@ -50,6 +52,10 @@ class QuantumMC {
     /// \brief Dump resulting distribution in file named by f
     /// \param f Filename to dump result to
     void write(const std::string &f);
+
+    /// \brief Returns the wave function as a Python list
+    /// \return List of tuples (x, psi(x))
+    boost::python::list getPsi();
 
   private:
     /// Solution of the diffusion equation: the wave function

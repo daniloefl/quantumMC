@@ -190,3 +190,18 @@ void QuantumMC::write(const string &f) {
   ff.close();
 }
 
+python::list QuantumMC::getPsi() {
+  double norm = psiNorm();
+  python::list l;
+  python::list x;
+  python::list psi;
+  for (int i : irange<int>(0, (int) m_psi.size())) {
+    //l.append(python::make_tuple(i*m_dx + m_xmin, m_psi[i]/sqrt(norm)));
+    x.append(i*m_dx + m_xmin);
+    psi.append(m_psi[i]/sqrt(norm));
+  }
+  l.append(x);
+  l.append(psi);
+  return l;
+}
+

@@ -6,6 +6,7 @@ BOOST_PYTHON_MODULE(quantumMC)
 {
   class_<QuantumMC>("QuantumMC", init<int, int>())
     .def("run", &QuantumMC::run)
+    .def("getPsi", &QuantumMC::getPsi)
   ;
 }
 
