@@ -160,7 +160,7 @@ void QuantumMC::MC() {
       r2 += pow(m_x[i][d], 2);
     }
     // find the index of the walker in psi
-    int k = int(sqrt(r2)/m_xmax*m_psi.size());
+    int k = int((sqrt(r2)-m_xmin)/(m_xmax-m_xmin)*m_psi.size());
     // increment psi in that index to histogram it
     if (k < m_psi.size())
       m_psi[k] += 1;
