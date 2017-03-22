@@ -1,5 +1,5 @@
 #include <boost/python.hpp>
-#include "include/QuantumMC.h"
+#include "QuantumMC.h"
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(quantumMC)
