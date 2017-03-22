@@ -6,6 +6,8 @@ can be made to solve the Schroedinger equation.
 It creates an interface with Python and allows one to use Python
 to steer the MCMC C++ code.
 Take a look at examples/test.py, for instance.
+The result of this test can be seen in:
+<https://daniloefl.github.io/quantumMC/test.html>
 
 # Compilation
 
