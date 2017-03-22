@@ -1,6 +1,6 @@
 
 import quantumMC
-c = quantumMC.QuantumMC(300, 4000)
+c = quantumMC.QuantumMC()
 c.run()
 x, psi = c.getPsi()
 

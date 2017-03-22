@@ -32,7 +32,27 @@ class QuantumMC {
     /// \brief Constructor with maximum time and number of MCMC steps required as inputs.
     /// \param NT
     /// \param reqSteps Number of steps required from the MCMC
-    QuantumMC(int NT = 10000, int reqSteps = 4000);
+    QuantumMC(double xmin=-5, double xmax=5, double dx=0.1, int NT = 300, int reqSteps = 4000);
+
+    /// \brief Set minimum x
+    /// \param xmin Minimum value of x
+    void setXmin(double xmin);
+
+    /// \brief Set maximum x
+    /// \param xmax Maximum value of x
+    void setXmax(double xmax);
+
+    /// \brief Set delta x
+    /// \param dx Delta x
+    void setDeltaX(double dx);
+
+    /// \brief Set number of steps
+    /// \param reqSteps number of required MCMC steps
+    void setNSteps(int reqSteps);
+
+    /// \brief Set number of walkers
+    /// \param NT number of walkers
+    void setN(int NT);
 
     /// \brief Returns the value of the potential energy in position r
     /// \param r The position where to calculate the potential energy

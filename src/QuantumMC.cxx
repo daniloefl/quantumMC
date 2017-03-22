@@ -17,7 +17,7 @@ random_device r;
 mt19937_64 rEngine(r());
 normal_distribution<double> rGaus(0.0, 1.0);
 
-QuantumMC::QuantumMC(int NT, int reqSteps) {
+QuantumMC::QuantumMC(double xmin, double xmax, double dx, int NT, int reqSteps) {
   // set number of required steps
   m_reqSteps = reqSteps;
 
@@ -28,9 +28,9 @@ QuantumMC::QuantumMC(int NT, int reqSteps) {
   m_N = m_NT;
 
   // set axes range
-  m_xmin = 0.0;
-  m_xmax = 10.0;
-  m_dx = 0.1;
+  m_xmin = xmin;
+  m_xmax = xmax;
+  m_dx = dx;
 
   // set time step
   m_dt = 0.05;
@@ -59,6 +59,29 @@ QuantumMC::QuantumMC(int NT, int reqSteps) {
 
   // clean it up
   clean();
+}
+
+
+void QuantumMC::setXmin(double xmin) {
+  m_xmin = xmin;
+}
+
+void QuantumMC::setXmax(double xmax) {
+  m_xmax = xmax;
+}
+
+void QuantumMC::setDeltaX(double dx) {
+  m_dx = dx;
+}
+
+
+void QuantumMC::setNSteps(int reqSteps) {
+  m_reqSteps = reqSteps;
+}
+
+void QuantumMC::setN(int NT) {
+  m_NT = NT;
+  m_N = NT;
 }
 
 void QuantumMC::clean() {
@@ -153,6 +176,7 @@ void QuantumMC::thermalise() {
 }
 
 void QuantumMC::run() {
+  clean(); // clean up results
   thermalise(); // initialise walkers with something close to the final distribution
   clean(); // clean up results but keep walkers in the thermalised positions
   for (int i : irange<int>(0, m_reqSteps)) { // now do the requested MCMC steps
