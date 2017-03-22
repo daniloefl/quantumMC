@@ -29,6 +29,7 @@ QuantumMC::QuantumMC(std::string potentialName, double xmin, double xmax, double
 
   // name of the Python function holding the potential
   m_potentialName = potentialName;
+  m_potential = boost::python::eval(m_potentialName.c_str());
 
   // set number of required steps
   m_reqSteps = reqSteps;
@@ -105,11 +106,13 @@ void QuantumMC::clean() {
 
 double QuantumMC::V(pos r) {
   //return 0.5*(pow(r[0], 2)); // + pow(r[1], 2) + pow(r[2], 2));
-  std::stringstream ss;
-  ss << m_potentialName << "(" << setprecision(17) << r[0] << ")";
-  boost::python::object V_obj = boost::python::eval(ss.str().c_str());
-  double V_double = boost::python::extract<double>(V_obj);
-  return V_double;
+
+  //std::stringstream ss;
+  //ss << m_potentialName << "(" << setprecision(17) << r[0] << ")";
+  //boost::python::object V_obj = boost::python::eval(ss.str().c_str());
+  //double V_double = boost::python::extract<double>(V_obj);
+
+  return boost::python::extract<double>(m_potential(r[0]));
 }
 
 void QuantumMC::step(int n) {

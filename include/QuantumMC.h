@@ -84,9 +84,9 @@ class QuantumMC {
     boost::python::list getEnergy();
 
   private:
-    /// Name of the potential function in Python
+    /// Name of the potential function in Python and its object
     std::string m_potentialName;
-
+    boost::python::object m_potential;
 
     /// Solution of the diffusion equation: the wave function
     std::vector<double> m_psi;
