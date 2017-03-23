@@ -143,6 +143,7 @@ bool PathIntegralMC::step(double &x_n) {
     m_x[t] = x_n;
     return true;
   }
+  x_n = m_x[t];
   return false;
 }
 
@@ -150,8 +151,6 @@ void PathIntegralMC::MC() {
   for (int i : irange<int>(0, m_Nt)) {
     double x_n = 0;
     bool accepted = step(x_n); // make Nt MCMC steps
-
-    if (!accepted) continue;
 
     double E0 = V(x_n) + 0.5*x_n*dVdx(x_n); // kinetic energy from the Virial theorem
     // calculate average energy and average energy^2
