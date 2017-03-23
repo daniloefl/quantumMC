@@ -1,6 +1,7 @@
 #include <boost/python.hpp>
 #include <string>
 #include "SchroedingerDiffusionMC.h"
+#include "PathIntegralMC.h"
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(quantumMC)
@@ -15,6 +16,19 @@ BOOST_PYTHON_MODULE(quantumMC)
     .def("setNSteps", &SchroedingerDiffusionMC::setNSteps)
     .def("setN", &SchroedingerDiffusionMC::setN)
     .def("getEnergy", &SchroedingerDiffusionMC::getEnergy)
+  ;
+
+  class_<PathIntegralMC>("PathIntegralMC", init<object, object>())
+    .def(init<object, object, double, double, double, double, int, double, int>())
+    .def("run", &PathIntegralMC::run)
+    .def("getPsi", &PathIntegralMC::getPsi)
+    .def("setXmin", &PathIntegralMC::setXmin)
+    .def("setXmax", &PathIntegralMC::setXmax)
+    .def("setDeltaX", &PathIntegralMC::setDeltaX)
+    .def("setDelta", &PathIntegralMC::setDelta)
+    .def("setDeltaT", &PathIntegralMC::setDeltaT)
+    .def("setNSteps", &PathIntegralMC::setNSteps)
+    .def("getEnergy", &PathIntegralMC::getEnergy)
   ;
 }
 

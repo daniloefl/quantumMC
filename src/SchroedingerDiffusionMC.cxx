@@ -20,11 +20,11 @@
 using namespace boost;
 using namespace std;
 
-random_device r;
-mt19937_64 rEngine(r());
-normal_distribution<double> rGaus(0.0, 1.0);
+SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential,
+                                                 double xmin, double xmax, double dx,
+                                                 int NT, int reqSteps)
+  : rEngine(std::random_device()()) {
 
-SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential, double xmin, double xmax, double dx, int NT, int reqSteps) {
   Py_Initialize();
 
   // Python function holding the potential
@@ -59,10 +59,10 @@ SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential
   m_alive.resize(m_N);
 
   // now create the x position of the walkers
-  uniform_real_distribution<double> rFlat5(-0.5, 0.5);
+  uniform_real_distribution<double> rFlat5(m_xmin, m_xmax);
   for (int i : irange<int>(0, m_N)) {
     m_x[i] = pos();
-    // set their positions randomly close to zero
+    // set their positions randomly
     m_x[i][0] = rFlat5(rEngine);
     m_alive[i] = true; // all are alive
   }
@@ -122,6 +122,7 @@ void SchroedingerDiffusionMC::step(int n) {
 
   // P = exp( - m (x_n - x_{n-1})^2/dt ) incorporates the kinetic energy
   // and it is simulated by the random displacement below
+  normal_distribution<double> rGaus(0.0, 1.0);
   m_x[n][0] += sqrt(m_dt)*rGaus(rEngine); // shifts walker by a gaussian with width sqrt(delta t): diffusion!
 
   // now we need to incorporate W
@@ -195,7 +196,7 @@ void SchroedingerDiffusionMC::MC() {
     // find the index of the walker in psi
     int k = int((x-m_xmin)/(m_xmax-m_xmin)*m_psi.size());
     // increment psi in that index to histogram it
-    if (k < m_psi.size())
+    if (k < m_psi.size() && k > 0)
       m_psi[k] += 1;
   }
   m_nMCSteps++; // end of this MCMC step
@@ -230,7 +231,7 @@ double SchroedingerDiffusionMC::eError() {
 double SchroedingerDiffusionMC::psiNorm() {
   double n = 0;
   // get the sum of |psi|^2 delta x to estimate integral |psi|^2 dx
-  for (int i : irange<int>(0, (int) m_psi.size())) n += pow(i*m_dx, DIM-1)*pow(m_psi[i], 2)*m_dx;
+  for (int i : irange<int>(0, (int) m_psi.size())) n += pow(m_psi[i], 2)*m_dx;
   return n;
 }
 

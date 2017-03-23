@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef QUANTUMMC_H
-#define QUANTUMMC_H
+#ifndef SCHROEDINGERDIFFUSIONMC_H
+#define SCHROEDINGERDIFFUSIONMC_H
 
 #include <iostream>
 #include <cmath>
@@ -23,8 +23,7 @@
 #include <boost/python/list.hpp>
 #include <boost/python/tuple.hpp>
 
-#define DIM 1
-typedef std::array<double, DIM> pos;
+typedef std::array<double, 1> pos;
 
 class SchroedingerDiffusionMC {
   public:
@@ -140,6 +139,8 @@ class SchroedingerDiffusionMC {
     /// \brief Clean up all variables to get ready for MCMC simulation
     void clean();
 
+    /// Helper variables for random number generation
+    std::mt19937_64 rEngine;
 };
 
 #endif
