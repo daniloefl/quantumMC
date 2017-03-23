@@ -116,8 +116,10 @@ bool PathIntegralMC::step(double &x_n) {
   // choose random time slice:
   int t = rFlatInt(rEngine);
 
-  int t_prev = std::max(0, t-1);
-  int t_next = std::min(m_Nt-1, t+1);
+  int t_prev = t-1;
+  if (t_prev < 0) t_prev = m_Nt-1;
+  int t_next = t+1;
+  if (t_next > m_Nt-1) t_next = 0;
 
   uniform_real_distribution<double> rFlat(-1, 1);
   // shift walker in time t
