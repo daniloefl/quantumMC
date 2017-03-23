@@ -32,5 +32,6 @@ var classSchroedingerDiffusionMC =
     [ "m_sumE2", "classSchroedingerDiffusionMC.html#a29d7ea81b089d6792f5489800175b8d4", null ],
     [ "m_x", "classSchroedingerDiffusionMC.html#abf4604d64995ad78661109151e15d27d", null ],
     [ "m_xmax", "classSchroedingerDiffusionMC.html#a5698c96ea98aa5d035e71624d561f3c0", null ],
-    [ "m_xmin", "classSchroedingerDiffusionMC.html#af9036a9c1d20aff602ba0e6bc96f80e0", null ]
+    [ "m_xmin", "classSchroedingerDiffusionMC.html#af9036a9c1d20aff602ba0e6bc96f80e0", null ],
+    [ "rEngine", "classSchroedingerDiffusionMC.html#adaa86aff0cb992030b2b8515d1ad7c29", null ]
 ];

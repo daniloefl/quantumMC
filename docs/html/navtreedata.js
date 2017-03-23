@@ -25,7 +25,7 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"SchroedingerDiffusionMC_8cxx.html"
+"PathIntegralMC_8cxx.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
