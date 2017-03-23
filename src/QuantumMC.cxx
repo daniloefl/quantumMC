@@ -118,13 +118,30 @@ double QuantumMC::V(pos r) {
 void QuantumMC::step(int n) {
   uniform_real_distribution<double> rFlat(0, 1);
   // shift walker
+  // psi = prod dx_j [ prod W P(x_n, x_{n-1}) ] psi(0)
+  // Weight function W = exp(-dt*(V - E))
+
+  // P = exp( - m (x_n - x_{n-1})^2/dt ) incorporates the kinetic energy
+  // and it is simulated by the random displacement below
   m_x[n][0] += sqrt(m_dt)*rGaus(rEngine); // shifts walker by a gaussian with width sqrt(delta t): diffusion!
+
+  // now we need to incorporate W
+  // could be done weighting the psi function
+  // but it is inefficient
+  // so we kill walkers depending on W
   // change in effective potential energy V - E causes the walker to die with certain probability
-  double q = exp(-m_dt*(V(m_x[n]) - m_E0));
-  int survivors = int(q);
-  if (q - survivors > rFlat(rEngine)) {
+  // https://www.thphys.uni-heidelberg.de/~wetzel/qmc2006/KOSZ96.pdf
+  // page 5
+  // probability of a surviving walker is proportional to W, but W is not bounded in principle
+  // so make it integer rounding it up or down depending on its fractional part
+  double W = exp(-m_dt*(V(m_x[n]) - m_E0));
+  int survivors = int(W);
+  if (W - survivors > rFlat(rEngine)) {
     survivors++;
   }
+  // survivors = W with probability frac(W) = W - int(W)
+  // and survivors = W+1 with probability 1 - frac(W)
+  // now we have an integer number of new particles
   // make a new walker
   if (survivors-1 > 0) {
     m_x.resize(m_N+(survivors-1));
@@ -161,6 +178,11 @@ void QuantumMC::MC() {
     if (m_alive[i]) ++j;
   }
   m_N = j; // reset number of alive walkers
+  // https://www.thphys.uni-heidelberg.de/~wetzel/qmc2006/KOSZ96.pdf
+  // page 3
+  // the energy must be set to go in the direction of the
+  // ground state energy, otherwise the wave function vanishes or diverges
+  // see end of page 5, beginning of page 6
   // change in number of walkers implies change in energy
   // setting alpha = 0.1
   m_E0 += log(double(m_NT)/double(m_N))/10.0;
