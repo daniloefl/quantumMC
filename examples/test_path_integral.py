@@ -7,6 +7,7 @@ def dVdx(x):
 
 import quantumMC
 c = quantumMC.PathIntegralMC(V, dVdx)
+c.setNSteps(10000)
 c.run()
 x, psi = c.getPsi()
 energy, energy_error = c.getEnergy()
