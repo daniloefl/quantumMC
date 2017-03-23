@@ -1,5 +1,5 @@
 /**
- * \class QuantumMC
+ * \class SchroedingerDiffusionMC
  *
  * \ingroup quantumMC
  *
@@ -26,17 +26,17 @@
 #define DIM 1
 typedef std::array<double, DIM> pos;
 
-class QuantumMC {
+class SchroedingerDiffusionMC {
   public:
 
     /// \brief Constructor with maximum time and number of MCMC steps required as inputs.
-    /// \param potentialName Name of the Python function called with a single double parameter that returns the value of the potential at a certain point
+    /// \param potential Python function called with a single double parameter that returns the value of the potential at a certain point
     /// \param xmin Minimum value of the X axis.
     /// \param xmax Maximum value of the X axis.
     /// \param dx Delta X.
     /// \param NT Number of walkers
     /// \param reqSteps Number of steps required from the MCMC
-    QuantumMC(std::string potentialName, double xmin=-5, double xmax=5, double dx=0.1, int NT = 300, int reqSteps = 4000);
+    SchroedingerDiffusionMC(boost::python::object potential, double xmin=-5, double xmax=5, double dx=0.1, int NT = 300, int reqSteps = 4000);
 
     /// \brief Set minimum x
     /// \param xmin Minimum value of x
@@ -84,8 +84,7 @@ class QuantumMC {
     boost::python::list getEnergy();
 
   private:
-    /// Name of the potential function in Python and its object
-    std::string m_potentialName;
+    /// Potential function in Python and its object
     boost::python::object m_potential;
 
     /// Solution of the diffusion equation: the wave function

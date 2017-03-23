@@ -3,7 +3,7 @@ def V(x):
   return 0.5*x*x
 
 import quantumMC
-c = quantumMC.QuantumMC("V")
+c = quantumMC.SchroedingerDiffusionMC(V)
 c.run()
 x, psi = c.getPsi()
 energy, energy_error = c.getEnergy()

@@ -15,7 +15,7 @@
 
 #include <Python.h>
 
-#include "QuantumMC.h"
+#include "SchroedingerDiffusionMC.h"
 
 using namespace boost;
 using namespace std;
@@ -24,12 +24,11 @@ random_device r;
 mt19937_64 rEngine(r());
 normal_distribution<double> rGaus(0.0, 1.0);
 
-QuantumMC::QuantumMC(std::string potentialName, double xmin, double xmax, double dx, int NT, int reqSteps) {
+SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential, double xmin, double xmax, double dx, int NT, int reqSteps) {
   Py_Initialize();
 
-  // name of the Python function holding the potential
-  m_potentialName = potentialName;
-  m_potential = boost::python::eval(m_potentialName.c_str());
+  // Python function holding the potential
+  m_potential = potential;
 
   // set number of required steps
   m_reqSteps = reqSteps;
@@ -73,29 +72,29 @@ QuantumMC::QuantumMC(std::string potentialName, double xmin, double xmax, double
 }
 
 
-void QuantumMC::setXmin(double xmin) {
+void SchroedingerDiffusionMC::setXmin(double xmin) {
   m_xmin = xmin;
 }
 
-void QuantumMC::setXmax(double xmax) {
+void SchroedingerDiffusionMC::setXmax(double xmax) {
   m_xmax = xmax;
 }
 
-void QuantumMC::setDeltaX(double dx) {
+void SchroedingerDiffusionMC::setDeltaX(double dx) {
   m_dx = dx;
 }
 
 
-void QuantumMC::setNSteps(int reqSteps) {
+void SchroedingerDiffusionMC::setNSteps(int reqSteps) {
   m_reqSteps = reqSteps;
 }
 
-void QuantumMC::setN(int NT) {
+void SchroedingerDiffusionMC::setN(int NT) {
   m_NT = NT;
   m_N = NT;
 }
 
-void QuantumMC::clean() {
+void SchroedingerDiffusionMC::clean() {
   m_nMCSteps = 0; // number of taken MC steps
   // reset energy estimate
   m_sumE = 0;
@@ -104,7 +103,7 @@ void QuantumMC::clean() {
   for (auto &x : m_psi) { x = 0.0; }
 }
 
-double QuantumMC::V(pos r) {
+double SchroedingerDiffusionMC::V(pos r) {
   //return 0.5*(pow(r[0], 2)); // + pow(r[1], 2) + pow(r[2], 2));
 
   //std::stringstream ss;
@@ -115,7 +114,7 @@ double QuantumMC::V(pos r) {
   return boost::python::extract<double>(m_potential(r[0]));
 }
 
-void QuantumMC::step(int n) {
+void SchroedingerDiffusionMC::step(int n) {
   uniform_real_distribution<double> rFlat(0, 1);
   // shift walker
   // psi = prod dx_j [ prod W P(x_n, x_{n-1}) ] psi(0)
@@ -163,7 +162,7 @@ void QuantumMC::step(int n) {
   }
 }
 
-void QuantumMC::MC() {
+void SchroedingerDiffusionMC::MC() {
   int N0 = m_N; // original number of walkers
   for (int i : irange<int>(0, N0)) step(i); // make N0 MCMC steps
 
@@ -202,14 +201,14 @@ void QuantumMC::MC() {
   m_nMCSteps++; // end of this MCMC step
 }
 
-void QuantumMC::thermalise() {
+void SchroedingerDiffusionMC::thermalise() {
   // just do 20% of the requested steps to initialise walkers to something
   for (int i : irange<int>(0, int(0.2*m_reqSteps))) {
     MC();
   }
 }
 
-void QuantumMC::run() {
+void SchroedingerDiffusionMC::run() {
   clean(); // clean up results
   thermalise(); // initialise walkers with something close to the final distribution
   clean(); // clean up results but keep walkers in the thermalised positions
@@ -218,24 +217,24 @@ void QuantumMC::run() {
   }
 }
 
-double QuantumMC::eMean() {
+double SchroedingerDiffusionMC::eMean() {
   // get mean energy
   return m_sumE/double(m_nMCSteps);
 }
 
-double QuantumMC::eError() {
+double SchroedingerDiffusionMC::eError() {
   // get sqrt(variance) of the energy estimate
   return sqrt(m_sumE2/double(m_nMCSteps) - pow(m_sumE/double(m_nMCSteps), 2))/sqrt(m_nMCSteps);
 }
 
-double QuantumMC::psiNorm() {
+double SchroedingerDiffusionMC::psiNorm() {
   double n = 0;
   // get the sum of |psi|^2 delta x to estimate integral |psi|^2 dx
   for (int i : irange<int>(0, (int) m_psi.size())) n += pow(i*m_dx, DIM-1)*pow(m_psi[i], 2)*m_dx;
   return n;
 }
 
-void QuantumMC::write(const string &f) {
+void SchroedingerDiffusionMC::write(const string &f) {
   // write out the result
   ofstream ff(f.c_str());
   ff << "# $E = " << eMean() << " \\pm " << eError() << "$" << endl;
@@ -248,7 +247,7 @@ void QuantumMC::write(const string &f) {
   ff.close();
 }
 
-python::list QuantumMC::getPsi() {
+python::list SchroedingerDiffusionMC::getPsi() {
   double norm = psiNorm();
   python::list l;
   python::list x;
@@ -263,7 +262,7 @@ python::list QuantumMC::getPsi() {
   return l;
 }
 
-python::list QuantumMC::getEnergy() {
+python::list SchroedingerDiffusionMC::getEnergy() {
   python::list l;
   l.append(eMean());
   l.append(eError());

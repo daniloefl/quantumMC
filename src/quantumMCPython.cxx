@@ -1,20 +1,20 @@
 #include <boost/python.hpp>
 #include <string>
-#include "QuantumMC.h"
+#include "SchroedingerDiffusionMC.h"
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(quantumMC)
 {
-  class_<QuantumMC>("QuantumMC", init<std::string>())
-    .def(init<std::string, double, double, double, int, int>())
-    .def("run", &QuantumMC::run)
-    .def("getPsi", &QuantumMC::getPsi)
-    .def("setXmin", &QuantumMC::setXmin)
-    .def("setXmax", &QuantumMC::setXmax)
-    .def("setDeltaX", &QuantumMC::setDeltaX)
-    .def("setNSteps", &QuantumMC::setNSteps)
-    .def("setN", &QuantumMC::setN)
-    .def("getEnergy", &QuantumMC::getEnergy)
+  class_<SchroedingerDiffusionMC>("SchroedingerDiffusionMC", init<object>())
+    .def(init<object, double, double, double, int, int>())
+    .def("run", &SchroedingerDiffusionMC::run)
+    .def("getPsi", &SchroedingerDiffusionMC::getPsi)
+    .def("setXmin", &SchroedingerDiffusionMC::setXmin)
+    .def("setXmax", &SchroedingerDiffusionMC::setXmax)
+    .def("setDeltaX", &SchroedingerDiffusionMC::setDeltaX)
+    .def("setNSteps", &SchroedingerDiffusionMC::setNSteps)
+    .def("setN", &SchroedingerDiffusionMC::setN)
+    .def("getEnergy", &SchroedingerDiffusionMC::getEnergy)
   ;
 }
 
