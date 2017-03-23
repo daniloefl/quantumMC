@@ -9,6 +9,9 @@ Take a look at examples/test.py, for instance.
 The result of this test can be seen in:
 <https://daniloefl.github.io/quantumMC/test.html>
 
+Consult the documentation at:
+<https://daniloefl.github.io/quantumMC/html/index.html>
+
 # Compilation
 
 This needs boost libraries range and python. Install them with:

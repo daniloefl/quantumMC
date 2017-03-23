@@ -25,7 +25,7 @@ find_package(Doxygen)
 if(DOXYGEN_FOUND)
     set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/doxygen.txt)
     add_custom_target(
-      doc ALL
+      doc
       doxygen ${doxyfile}
     )
 endif()
