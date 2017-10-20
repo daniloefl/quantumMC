@@ -1,4 +1,8 @@
 
+import sys
+sys.path.append('lib/')
+sys.path.append('../lib/')
+
 def V(x):
   return 0.5*x*x
 
