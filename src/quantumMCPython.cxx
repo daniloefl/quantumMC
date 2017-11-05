@@ -15,6 +15,7 @@ BOOST_PYTHON_MODULE(quantumMC)
     .def("setDeltaX", &SchroedingerDiffusionMC::setDeltaX)
     .def("setNSteps", &SchroedingerDiffusionMC::setNSteps)
     .def("setN", &SchroedingerDiffusionMC::setN)
+    .def("logGrid", &SchroedingerDiffusionMC::logGrid)
     .def("getEnergy", &SchroedingerDiffusionMC::getEnergy)
   ;
 

@@ -49,6 +49,10 @@ class SchroedingerDiffusionMC {
     /// \param dx Delta x
     void setDeltaX(double dx);
 
+    /// \brief Set logarithmic Grid.
+    /// \param logGrid Whether the Grid is to be logarithmic
+    void logGrid(bool logGrid = true);
+
     /// \brief Set number of steps
     /// \param reqSteps number of required MCMC steps
     void setNSteps(int reqSteps);
@@ -60,6 +64,10 @@ class SchroedingerDiffusionMC {
     /// \brief Returns the value of the potential energy in position r
     /// \param r The position where to calculate the potential energy
     double V(pos r);
+
+    /// \brief Returns the value of the potential energy in position r
+    /// \param r The position where to calculate the potential energy
+    double V(double r);
 
     /// \brief Thermalise and run real MCMC
     void run();
@@ -83,6 +91,9 @@ class SchroedingerDiffusionMC {
     boost::python::list getEnergy();
 
   private:
+    /// Logarithmic grid
+    bool m_logGrid;
+
     /// Potential function in Python and its object
     boost::python::object m_potential;
 

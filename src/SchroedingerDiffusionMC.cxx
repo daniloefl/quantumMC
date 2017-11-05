@@ -27,6 +27,8 @@ SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential
 
   Py_Initialize();
 
+  m_logGrid = false;
+
   // Python function holding the potential
   m_potential = potential;
 
@@ -84,6 +86,10 @@ void SchroedingerDiffusionMC::setDeltaX(double dx) {
   m_dx = dx;
 }
 
+void SchroedingerDiffusionMC::logGrid(bool logGrid) {
+  m_logGrid = logGrid;
+}
+
 
 void SchroedingerDiffusionMC::setNSteps(int reqSteps) {
   m_reqSteps = reqSteps;
@@ -114,6 +120,10 @@ double SchroedingerDiffusionMC::V(pos r) {
   return boost::python::extract<double>(m_potential(r[0]));
 }
 
+double SchroedingerDiffusionMC::V(double r) {
+  return boost::python::extract<double>(m_potential(r));
+}
+
 void SchroedingerDiffusionMC::step(int n) {
   uniform_real_distribution<double> rFlat(0, 1);
   // shift walker
@@ -134,7 +144,12 @@ void SchroedingerDiffusionMC::step(int n) {
   // page 5
   // probability of a surviving walker is proportional to W, but W is not bounded in principle
   // so make it integer rounding it up or down depending on its fractional part
-  double W = exp(-m_dt*(V(m_x[n]) - m_E0));
+  double W = 0;
+  if (m_logGrid) {
+    W = std::exp(-m_dt*std::pow(std::exp(m_x[n][0]), 2)*(V(std::exp(m_x[n][0])) - m_E0));
+  } else {
+    W = std::exp(-m_dt*(V(m_x[n]) - m_E0));
+  }
   int survivors = int(W);
   if (W - survivors > rFlat(rEngine)) {
     survivors++;
@@ -157,7 +172,7 @@ void SchroedingerDiffusionMC::step(int n) {
   if (survivors == 0)
     m_alive[n] = false;
   // too many walkers ...
-  if (m_N > 500000) {
+  if (m_N > 1000000) {
     cout << "Too many nodes: " << m_N << std::endl;
     exit(-1);
   }
@@ -204,12 +219,28 @@ void SchroedingerDiffusionMC::MC() {
 
 void SchroedingerDiffusionMC::thermalise() {
   // just do 20% of the requested steps to initialise walkers to something
-  for (int i : irange<int>(0, int(0.2*m_reqSteps))) {
+  for (int i : irange<int>(0, int(0.3*m_reqSteps))) {
     MC();
   }
 }
 
 void SchroedingerDiffusionMC::run() {
+  // set initial size of the wave function
+  m_psi.resize(int((m_xmax - m_xmin)/m_dx));
+  // position and state of the walkers
+  m_x.resize(m_N);
+  m_alive.resize(m_N);
+
+  // now create the x position of the walkers
+  uniform_real_distribution<double> rFlat5(m_xmin, m_xmax);
+  for (int i : irange<int>(0, m_N)) {
+    m_x[i] = pos();
+    // set their positions randomly
+    m_x[i][0] = rFlat5(rEngine);
+    m_alive[i] = true; // all are alive
+  }
+
+  // clean it up
   clean(); // clean up results
   thermalise(); // initialise walkers with something close to the final distribution
   clean(); // clean up results but keep walkers in the thermalised positions
@@ -225,13 +256,17 @@ double SchroedingerDiffusionMC::eMean() {
 
 double SchroedingerDiffusionMC::eError() {
   // get sqrt(variance) of the energy estimate
-  return sqrt(m_sumE2/double(m_nMCSteps) - pow(m_sumE/double(m_nMCSteps), 2))/sqrt(m_nMCSteps);
+  return sqrt((m_sumE2/double(m_nMCSteps) - pow(m_sumE/double(m_nMCSteps), 2))*((double) (m_nMCSteps))/((double) (m_nMCSteps - 1)))/sqrt((double) m_nMCSteps);
 }
 
 double SchroedingerDiffusionMC::psiNorm() {
   double n = 0;
   // get the sum of |psi|^2 delta x to estimate integral |psi|^2 dx
-  for (int i : irange<int>(0, (int) m_psi.size())) n += pow(m_psi[i], 2)*m_dx;
+  if (m_logGrid) {
+    for (int i : irange<int>(0, (int) m_psi.size())) n += pow(m_psi[i], 2)*std::pow(std::exp(i*m_dx + m_xmin), 2)*m_dx;
+  } else {
+    for (int i : irange<int>(0, (int) m_psi.size())) n += pow(m_psi[i], 2)*m_dx;
+  }
   return n;
 }
 
@@ -243,7 +278,11 @@ void SchroedingerDiffusionMC::write(const string &f) {
   double norm = psiNorm();
   for (int i : irange<int>(0, (int) m_psi.size())) {
     //ff << i*m_dx + m_xmin << "    " << pow(i*m_dx, DIM-1)*pow(m_psi[i], 2)/norm << endl;
-    ff << i*m_dx + m_xmin << "    " << m_psi[i]/sqrt(norm) << endl;
+    if (m_logGrid) {
+      ff << std::exp(i*m_dx + m_xmin) << "    " << m_psi[i]*std::sqrt(std::exp(i*m_dx + m_xmin))/sqrt(norm) << endl;
+    } else {
+      ff << i*m_dx + m_xmin << "    " << m_psi[i]/sqrt(norm) << endl;
+    }
   }
   ff.close();
 }
@@ -255,8 +294,13 @@ python::list SchroedingerDiffusionMC::getPsi() {
   python::list psi;
   for (int i : irange<int>(0, (int) m_psi.size())) {
     //l.append(python::make_tuple(i*m_dx + m_xmin, m_psi[i]/sqrt(norm)));
-    x.append(i*m_dx + m_xmin);
-    psi.append(m_psi[i]/sqrt(norm));
+    if (m_logGrid) {
+      x.append(std::exp(i*m_dx + m_xmin));
+      psi.append(m_psi[i]*std::pow(std::exp(i*m_dx + m_xmin), 0.5)/sqrt(norm));
+    } else {
+      x.append(i*m_dx + m_xmin);
+      psi.append(m_psi[i]/sqrt(norm));
+    }
   }
   l.append(x);
   l.append(psi);
