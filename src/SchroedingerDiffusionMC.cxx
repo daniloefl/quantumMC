@@ -256,7 +256,7 @@ double SchroedingerDiffusionMC::eMean() {
 
 double SchroedingerDiffusionMC::eError() {
   // get sqrt(variance) of the energy estimate
-  return sqrt((m_sumE2/double(m_nMCSteps) - pow(m_sumE/double(m_nMCSteps), 2))*((double) (m_nMCSteps))/((double) (m_nMCSteps - 1)))/sqrt((double) m_nMCSteps);
+  return sqrt((m_sumE2/double(m_nMCSteps) - pow(m_sumE/double(m_nMCSteps), 2))/((double) (m_nMCSteps - 1)));
 }
 
 double SchroedingerDiffusionMC::psiNorm() {
