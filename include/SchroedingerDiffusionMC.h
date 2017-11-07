@@ -37,6 +37,13 @@ class SchroedingerDiffusionMC {
     /// \param reqSteps Number of steps required from the MCMC
     SchroedingerDiffusionMC(boost::python::object potential, double xmin=-5, double xmax=5, double dx=0.1, int NT = 300, int reqSteps = 4000);
 
+    /// \brief Activate importance sampling
+    /// \param active Whether to activate importance sampling.
+    /// \param guidingWF Trial wavefunction.
+    /// \param localEnergy Value of the hamiltonian applied in the trial wave function divided by the trial wave function
+    /// \param quantumForce Value of the derivative of the trial wave function over the trial wave function
+    void setImportanceSampling(bool active, boost::python::object guidingWF, boost::python::object localEnergy, boost::python::object quantumForce);
+
     /// \brief Set minimum x
     /// \param xmin Minimum value of x
     void setXmin(double xmin);
@@ -61,6 +68,18 @@ class SchroedingerDiffusionMC {
     /// \param NT number of walkers
     void setN(int NT);
 
+    /// \brief Calculate local energy relative to reference function
+    /// \param Position
+    double localEnergy(double x);
+
+    /// \brief Calculate quantum force
+    /// \param Position
+    double quantumForce(double x);
+
+    /// \brief Calculate guiding wavefunction
+    /// \param Position
+    double guidingWF(double x);
+
     /// \brief Returns the value of the potential energy in position r
     /// \param r The position where to calculate the potential energy
     double V(pos r);
@@ -80,6 +99,14 @@ class SchroedingerDiffusionMC {
     /// \return Ground state energy error
     double eError();
 
+    /// \brief Calculate the average local energy
+    /// \return Average local energy
+    double eLMean();
+
+    /// \brief Calculate the average local energy error
+    /// \return Average local energy error
+    double eLError();
+
     /// \brief Dump resulting distribution in file named by f
     /// \param f Filename to dump result to
     void write(const std::string &f);
@@ -90,12 +117,26 @@ class SchroedingerDiffusionMC {
 
     boost::python::list getEnergy();
 
+    boost::python::list getLocalEnergy();
+
   private:
+    /// Whether to use importance sampling
+    bool m_importanceSampling;
+
     /// Logarithmic grid
     bool m_logGrid;
 
     /// Potential function in Python and its object
     boost::python::object m_potential;
+
+    /// Guiding wave function
+    boost::python::object m_guidingWF;
+
+    /// Local energy function in Python
+    boost::python::object m_localEnergy;
+
+    /// Quantum force in Python
+    boost::python::object m_quantumForce;
 
     /// Solution of the diffusion equation: the wave function
     std::vector<double> m_psi;
@@ -123,6 +164,18 @@ class SchroedingerDiffusionMC {
     /// Time step used for the diffusion evolution
     double m_dt;
 
+    /// Current local energy relative to reference wave function
+    double m_EL;
+
+    /// Accummulation of weight factor for EL normalisation
+    double m_countEL;
+
+    /// Sum of local energies
+    double m_sumEL;
+
+    /// Sum in squares of local energies
+    double m_sumEL2;
+
     /// Number of walkers alive
     int m_N;
 
@@ -139,7 +192,13 @@ class SchroedingerDiffusionMC {
 
     /// \brief Implement an MCMC step on walker n
     /// \param n Walker number to apply the step on
-    void step(int n);
+    /// \return Whether the MCMC event was accepted
+    bool step(int n);
+
+    /// \brief Implement an MCMC step on walker n using importance sampling
+    /// \param n Walker number to apply the step on
+    /// \return Whether the MCMC event was accepted
+    bool stepImportanceSampling(int n);
 
     /// \brief Run MCMC for the predetermined set of steps
     void MC();

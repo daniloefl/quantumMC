@@ -20,6 +20,20 @@
 using namespace boost;
 using namespace std;
 
+void SchroedingerDiffusionMC::setImportanceSampling(bool active, boost::python::object guidingWF, boost::python::object localEnergy, boost::python::object quantumForce) {
+  m_importanceSampling = active;
+
+  // Python function holding the guiding wave function
+  m_guidingWF = guidingWF;
+
+  // Python function holding the local energy
+  m_localEnergy = localEnergy;
+
+  // Python function holding the quantum force
+  m_quantumForce = quantumForce;
+
+}
+
 SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential,
                                                  double xmin, double xmax, double dx,
                                                  int NT, int reqSteps)
@@ -35,6 +49,11 @@ SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential
   // set number of required steps
   m_reqSteps = reqSteps;
 
+  m_EL = 0;
+  m_countEL = 0;
+  m_sumEL = 0;
+  m_sumEL2 = 0;
+
   // number of surviving walkers
   m_NT = NT;
 
@@ -47,7 +66,8 @@ SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential
   m_dx = dx;
 
   // set time step
-  m_dt = 0.05;
+  //m_dt = 0.0001;
+  m_dt = 0.01;
 
   // set initial energy values
   m_E0 = 0;
@@ -105,6 +125,10 @@ void SchroedingerDiffusionMC::clean() {
   // reset energy estimate
   m_sumE = 0;
   m_sumE2 = 0;
+  m_EL = 0;
+  m_countEL = 0;
+  m_sumEL = 0;
+  m_sumEL2 = 0;
   // reset wave function as it will be "histogrammed"
   for (auto &x : m_psi) { x = 0.0; }
 }
@@ -124,7 +148,7 @@ double SchroedingerDiffusionMC::V(double r) {
   return boost::python::extract<double>(m_potential(r));
 }
 
-void SchroedingerDiffusionMC::step(int n) {
+bool SchroedingerDiffusionMC::step(int n) {
   uniform_real_distribution<double> rFlat(0, 1);
   // shift walker
   // psi = prod dx_j [ prod W P(x_n, x_{n-1}) ] psi(0)
@@ -133,25 +157,30 @@ void SchroedingerDiffusionMC::step(int n) {
   // P = exp( - m (x_n - x_{n-1})^2/dt ) incorporates the kinetic energy
   // and it is simulated by the random displacement below
   normal_distribution<double> rGaus(0.0, 1.0);
-  m_x[n][0] += sqrt(m_dt)*rGaus(rEngine); // shifts walker by a gaussian with width sqrt(delta t): diffusion!
+  double xo = m_x[n][0];
+  double xn = xo + sqrt(m_dt)*rGaus(rEngine);
+  m_x[n][0] = xn;
 
-  // now we need to incorporate W
-  // could be done weighting the psi function
-  // but it is inefficient
-  // so we kill walkers depending on W
-  // change in effective potential energy V - E causes the walker to die with certain probability
-  // https://www.thphys.uni-heidelberg.de/~wetzel/qmc2006/KOSZ96.pdf
-  // page 5
-  // probability of a surviving walker is proportional to W, but W is not bounded in principle
-  // so make it integer rounding it up or down depending on its fractional part
-  double W = 0;
+  double ELo = 0;
+  double EL = 0;
   if (m_logGrid) {
-    W = std::exp(-m_dt*std::pow(std::exp(m_x[n][0]), 2)*(V(std::exp(m_x[n][0])) - m_E0));
+    EL = V(std::exp(xn));
+    ELo = V(std::exp(xo));
   } else {
-    W = std::exp(-m_dt*(V(m_x[n]) - m_E0));
+    EL = V(xn);
+    ELo = V(xo);
   }
-  int survivors = int(W);
-  if (W - survivors > rFlat(rEngine)) {
+
+  double Wb = 1;
+  if (m_logGrid) {
+    Wb *= std::exp(-m_dt*std::pow(std::exp(xn), 2)*(0.5*(EL+ELo) - m_E0));
+  } else {
+    Wb *= std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
+  }
+  m_EL += EL*Wb;
+  m_countEL += Wb;
+  int survivors = int(Wb);
+  if (Wb - survivors > rFlat(rEngine)) {
     survivors++;
   }
   // survivors = W with probability frac(W) = W - int(W)
@@ -163,7 +192,7 @@ void SchroedingerDiffusionMC::step(int n) {
     m_alive.resize(m_N+(survivors-1));
     for (int i : irange<int>(0, survivors - 1)) {
       m_x[m_N][0] = m_x[n][0];
-
+  
       m_alive[m_N] = true;
       m_N++;
     }
@@ -172,15 +201,122 @@ void SchroedingerDiffusionMC::step(int n) {
   if (survivors == 0)
     m_alive[n] = false;
   // too many walkers ...
-  if (m_N > 1000000) {
+  if (m_N > 100000) {
     cout << "Too many nodes: " << m_N << std::endl;
     exit(-1);
   }
+  return true;
+}
+
+bool SchroedingerDiffusionMC::stepImportanceSampling(int n) {
+  uniform_real_distribution<double> rFlat(0, 1);
+  // shift walker
+  // psi = prod dx_j [ prod W P(x_n, x_{n-1}) ] psi(0)
+  // Weight function W = exp(-dt*(V - E))
+
+  // P = exp( - m (x_n - x_{n-1})^2/dt ) incorporates the kinetic energy
+  // and it is simulated by the random displacement below
+  normal_distribution<double> rGaus(0.0, 1.0);
+  double xo = m_x[n][0];
+
+  double Fo = 0;
+  if (m_logGrid) Fo = quantumForce(std::exp(xo));
+  else Fo = quantumForce(xo);
+
+  double xn = xo + sqrt(m_dt)*rGaus(rEngine) + m_dt*Fo;
+  double Fn = 0;
+  if (m_logGrid) Fn = quantumForce(std::exp(xn));
+  else Fn = quantumForce(xn);
+
+
+  double W = 1;
+  if (m_logGrid) {
+    W *= std::exp(-std::pow(std::exp(xo) - std::exp(xn) - m_dt*Fn, 2)/(2*m_dt));
+    W /= std::exp(-std::pow(std::exp(xn) - std::exp(xo) - m_dt*Fo, 2)/(2*m_dt));
+    W *= std::pow(guidingWF(std::exp(xn)), 2);
+    W /= std::pow(guidingWF(std::exp(xo)), 2);
+  } else {
+    W *= std::exp(-std::pow(xo - xn - m_dt*Fn, 2)/(2*m_dt));
+    W /= std::exp(-std::pow(xn - xo - m_dt*Fo, 2)/(2*m_dt));
+    W *= std::pow(guidingWF(xn), 2);
+    W /= std::pow(guidingWF(xo), 2);
+  }
+
+  double A = 1;
+  if (W < 1) A = W;
+
+  if (rFlat(rEngine) < A) { // probability A
+    // accept
+
+    m_x[n][0] = xn;
+
+    double ELo = 0;
+    double EL = 0;
+    if (m_logGrid) {
+      EL = localEnergy(std::exp(xn));
+      ELo = localEnergy(std::exp(xo));
+    } else {
+      EL = localEnergy(xn);
+      ELo = localEnergy(xo);
+    }
+
+
+    double Wb = 1;
+    if (m_logGrid) {
+      Wb *= std::exp(-m_dt*std::pow(std::exp(xn), 2)*(0.5*(EL+ELo) - m_E0));
+    } else {
+      Wb *= std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
+    }
+    m_EL += EL*Wb;
+    m_countEL += Wb;
+    int survivors = int(Wb);
+    if (Wb - survivors > rFlat(rEngine)) {
+      survivors++;
+    }
+    // survivors = W with probability frac(W) = W - int(W)
+    // and survivors = W+1 with probability 1 - frac(W)
+    // now we have an integer number of new particles
+    // make a new walker
+    if (survivors-1 > 0) {
+      m_x.resize(m_N+(survivors-1));
+      m_alive.resize(m_N+(survivors-1));
+      for (int i : irange<int>(0, survivors - 1)) {
+        m_x[m_N][0] = m_x[n][0];
+  
+        m_alive[m_N] = true;
+        m_N++;
+      }
+    }
+    // kill the walker
+    if (survivors == 0)
+      m_alive[n] = false;
+    // too many walkers ...
+    if (m_N > 100000) {
+      cout << "Too many nodes: " << m_N << std::endl;
+      exit(-1);
+    }
+    return true;
+  }
+  return false;
 }
 
 void SchroedingerDiffusionMC::MC() {
   int N0 = m_N; // original number of walkers
-  for (int i : irange<int>(0, N0)) step(i); // make N0 MCMC steps
+  m_EL = 0;
+  double accep = 0;
+  if (m_importanceSampling) {
+    for (int i : irange<int>(0, N0)) {
+      if (stepImportanceSampling(i)) {
+        accep += 1; // make N0 MCMC steps
+      }
+    }
+  } else {
+    for (int i : irange<int>(0, N0)) {
+      if (step(i)) {
+        accep += 1; // make N0 MCMC steps
+      }
+    }
+  }
 
   // now count the number of alive walkers
   // this also cleans up the vectors removing the dead walkers from the list
@@ -200,10 +336,13 @@ void SchroedingerDiffusionMC::MC() {
   // see end of page 5, beginning of page 6
   // change in number of walkers implies change in energy
   // setting alpha = 0.1
-  m_E0 += log(double(m_NT)/double(m_N))/10.0;
+  //m_E0 += log(double(m_NT)/double(m_N))/10.0;
+  m_E0 += 1.0/m_dt*(1.0 - ((double) m_N)/((double) N0));
   // calculate average energy and average energy^2
   m_sumE += m_E0;
   m_sumE2 += m_E0*m_E0;
+  m_sumEL += m_EL;
+  m_sumEL2 += m_EL*m_EL;
   // finally, histogram in this step for each walker
   for (int i : irange<int>(0, m_N)) {
     // find out the position of each walker
@@ -259,6 +398,28 @@ double SchroedingerDiffusionMC::eError() {
   return sqrt((m_sumE2/double(m_nMCSteps) - pow(m_sumE/double(m_nMCSteps), 2))/((double) (m_nMCSteps - 1)));
 }
 
+double SchroedingerDiffusionMC::eLMean() {
+  // get mean energy
+  return m_sumEL/double(m_countEL);
+}
+
+double SchroedingerDiffusionMC::eLError() {
+  // get sqrt(variance) of the energy estimate
+  return sqrt((m_sumEL2/double(m_countEL) - pow(m_sumEL/double(m_countEL), 2))/((double) (m_countEL - 1)));
+}
+
+double SchroedingerDiffusionMC::localEnergy(double x) {
+  return boost::python::extract<double>(m_localEnergy(x));
+}
+
+double SchroedingerDiffusionMC::quantumForce(double x) {
+  return boost::python::extract<double>(m_quantumForce(x));
+}
+
+double SchroedingerDiffusionMC::guidingWF(double x) {
+  return boost::python::extract<double>(m_guidingWF(x));
+}
+
 double SchroedingerDiffusionMC::psiNorm() {
   double n = 0;
   // get the sum of |psi|^2 delta x to estimate integral |psi|^2 dx
@@ -311,6 +472,13 @@ python::list SchroedingerDiffusionMC::getEnergy() {
   python::list l;
   l.append(eMean());
   l.append(eError());
+  return l;
+}
+
+python::list SchroedingerDiffusionMC::getLocalEnergy() {
+  python::list l;
+  l.append(eLMean());
+  l.append(eLError());
   return l;
 }
 

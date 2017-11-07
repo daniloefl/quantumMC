@@ -8,6 +8,7 @@ BOOST_PYTHON_MODULE(quantumMC)
 {
   class_<SchroedingerDiffusionMC>("SchroedingerDiffusionMC", init<object>())
     .def(init<object, double, double, double, int, int>())
+    .def("setImportanceSampling", &SchroedingerDiffusionMC::setImportanceSampling)
     .def("run", &SchroedingerDiffusionMC::run)
     .def("getPsi", &SchroedingerDiffusionMC::getPsi)
     .def("setXmin", &SchroedingerDiffusionMC::setXmin)
@@ -17,6 +18,7 @@ BOOST_PYTHON_MODULE(quantumMC)
     .def("setN", &SchroedingerDiffusionMC::setN)
     .def("logGrid", &SchroedingerDiffusionMC::logGrid)
     .def("getEnergy", &SchroedingerDiffusionMC::getEnergy)
+    .def("getLocalEnergy", &SchroedingerDiffusionMC::getLocalEnergy)
   ;
 
   class_<PathIntegralMC>("PathIntegralMC", init<object, object>())
