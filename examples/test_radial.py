@@ -12,22 +12,28 @@ def guidingWF(x):
   return 1
   #return 2*x*np.exp(-x)
 
+# deriv(WF) = 2*np.exp(-x) - 2*x*np.exp(-x)
+# deriv(WF)/WF = 1.0/x - 1.0
 def quantumForce(x): # deriv(guidingWF)/guidingWF
   return 0
-  #return (-1 + 1.0/x)
+  #return (-1.0 + 1.0/x)
 
+# deriv^2(WF) = -2*np.exp(-x) - 2*np.exp(-x) + 2*x*np.exp(-x)
+#             = -4*np.exp(-x) + 2*x*np.exp(-x)
+# deriv^2(WF)/WF = (-2.0/x + 1.0)
 def localEnergy(x): # H WF/WF
   return V(x)
-  #return -0.5*(-2.0/x + 1) + V(x)
+  #return -0.5*(-2.0/x + 1.0) + V(x)
 
 c = quantumMC.SchroedingerDiffusionMC(V)
-c.setImportanceSampling(True, guidingWF, localEnergy, quantumForce)
-c.setXmin(-9.0)
+#c.setImportanceSampling(True, guidingWF, localEnergy, quantumForce)
+c.setXmin(-7.0)
 c.setXmax(2.0)
 c.setDeltaX(0.01)
 c.logGrid(True)
-c.setNSteps(10000)
-c.setN(500)
+c.setTimeStep(1e-4)
+c.setNSteps(100000)
+c.setN(1000)
 c.run()
 x, psi = c.getPsi()
 energy, energy_error = c.getLocalEnergy()

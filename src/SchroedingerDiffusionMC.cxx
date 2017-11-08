@@ -66,7 +66,7 @@ SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential
   m_dx = dx;
 
   // set time step
-  m_dt = 0.0001;
+  m_dt = 0.1;
 
   // set initial energy values
   m_E0 = 0;
@@ -92,6 +92,9 @@ SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential
   clean();
 }
 
+void SchroedingerDiffusionMC::setTimeStep(double dt) {
+  m_dt = dt;
+}
 
 void SchroedingerDiffusionMC::setXmin(double xmin) {
   m_xmin = xmin;
@@ -171,13 +174,16 @@ bool SchroedingerDiffusionMC::step(int n) {
   }
 
   double Wb = 1;
+  double We = 1;
   if (m_logGrid) {
-    Wb *= std::exp(-m_dt*std::pow(std::exp(xn), 2)*(0.5*(EL+ELo) - m_E0));
+    Wb *= std::exp(-m_dt*0.5*(std::pow(std::exp(xn), 2) + std::pow(std::exp(xo), 2))*(0.5*(EL+ELo) - m_E0));
+    We *= std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
   } else {
     Wb *= std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
+    We = Wb;
   }
-  m_EL += EL*Wb;
-  m_countEL += Wb;
+  m_EL += EL*We;
+  m_countEL += We;
   int survivors = int(Wb);
   if (Wb - survivors > rFlat(rEngine)) {
     survivors++;
@@ -244,6 +250,8 @@ bool SchroedingerDiffusionMC::stepImportanceSampling(int n) {
     W /= std::exp(-std::pow(std::exp(xn) - std::exp(xo) - m_dt*Fo, 2)/(2*m_dt));
     W *= std::pow(guidingWF(std::exp(xn)), 2);
     W /= std::pow(guidingWF(std::exp(xo)), 2);
+    W *= std::exp(-m_dt*(std::pow(std::exp(xn), 2))*(0.5*(EL+ELo) - m_E0));
+    W /= std::exp(-m_dt*(std::pow(std::exp(xo), 2))*(0.5*(EL+ELo) - m_E0));
   } else {
     W *= std::exp(-std::pow(xo - xn - m_dt*Fn, 2)/(2*m_dt));
     W /= std::exp(-std::pow(xn - xo - m_dt*Fo, 2)/(2*m_dt));
@@ -260,13 +268,17 @@ bool SchroedingerDiffusionMC::stepImportanceSampling(int n) {
     m_x[n][0] = xn;
 
     double Wb = 1;
+    double We = 1;
     if (m_logGrid) {
-      Wb = std::exp(-m_dt*(std::pow(std::exp(xn), 2))*(0.5*(EL+ELo) - m_E0));
+      //Wb = std::exp(-m_dt*(std::pow(std::exp(xn), 2))*(0.5*(EL+ELo) - m_E0));
+      Wb = std::exp(-m_dt*0.5*(std::pow(std::exp(xn), 2) + std::pow(std::exp(xo), 2))*(0.5*(EL+ELo) - m_E0));
+      We = Wb;
     } else {
       Wb = std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
+      We = Wb;
     }
-    m_EL += EL*Wb;
-    m_countEL += Wb;
+    m_EL += EL*We;
+    m_countEL += We;
     int survivors = int(Wb);
     if (Wb - survivors > rFlat(rEngine)) {
       survivors++;
@@ -334,8 +346,8 @@ void SchroedingerDiffusionMC::MC() {
   // see end of page 5, beginning of page 6
   // change in number of walkers implies change in energy
   // setting alpha = 0.1
-  //m_E0 += log(double(m_NT)/double(m_N))/10.0;
-  m_E0 += 1.0/m_dt*(1.0 - ((double) m_N)/((double) N0));
+  m_E0 += log(double(m_NT)/double(m_N))*0.1;
+  //m_E0 += 1.0/m_dt*(1.0 - ((double) m_N)/((double) N0));
   // calculate average energy and average energy^2
   m_sumE += m_E0;
   m_sumE2 += m_E0*m_E0;
@@ -356,7 +368,14 @@ void SchroedingerDiffusionMC::MC() {
 
 void SchroedingerDiffusionMC::thermalise() {
   // just do 20% of the requested steps to initialise walkers to something
-  for (int i : irange<int>(0, int(0.3*m_reqSteps))) {
+  std::cout << "Thermalisation step using 40\% of the requested time range." << std::endl;
+  std::cout << std::setw(40) << "Time step size: " << std::setw(10) << std::setprecision(5) << m_dt << std::endl;
+  std::cout << std::setw(40) << "Thermalisation total time goal: " << std::setw(10) << std::setprecision(5) << 0.4*m_reqSteps*m_dt << std::endl;
+  std::cout << std::setw(10) << "Time" << " " << std::setw(25) << "Average local energy" << " " << std::setw(25) << "Average trial energy" << std::endl;
+  for (int i : irange<int>(0, int(0.4*m_reqSteps))) {
+    if (i > 0 && i % 1000 == 0) {
+      std::cout << std::setw(10) << std::setprecision(5) << i*m_dt << " " << std::setw(10) << std::setprecision(8) << eLMean() << " +/- " << std::setw(10) << std::setprecision(8) << eLError() << " " << std::setw(10) << std::setprecision(8) << eMean() << " +/- " << std::setw(10) << std::setprecision(8) << eError() << std::endl;
+    }
     MC();
   }
 }
@@ -381,7 +400,16 @@ void SchroedingerDiffusionMC::run() {
   clean(); // clean up results
   thermalise(); // initialise walkers with something close to the final distribution
   clean(); // clean up results but keep walkers in the thermalised positions
+
+  std::cout << "Beginning calculation." << std::endl;
+  std::cout << std::setw(40) << "Time step size: " << std::setw(10) << std::setprecision(5) << m_dt << std::endl;
+  std::cout << std::setw(40) << "Requested total time: " << std::setw(10) << std::setprecision(5) << m_reqSteps*m_dt << std::endl;
+
+  std::cout << std::setw(10) << "Time" << " " << std::setw(25) << "Average local energy" << " " << std::setw(25) << "Average trial energy" << std::endl;
   for (int i : irange<int>(0, m_reqSteps)) { // now do the requested MCMC steps
+    if (i > 0 && i % 1000 == 0) {
+      std::cout << std::setw(10) << std::setprecision(5) << i*m_dt << " " << std::setw(10) << std::setprecision(8) << eLMean() << " +/- " << std::setw(10) << std::setprecision(8) << eLError() << " " << std::setw(10) << std::setprecision(8) << eMean() << " +/- " << std::setw(10) << std::setprecision(8) << eError() << std::endl;
+    }
     MC();
   }
 }

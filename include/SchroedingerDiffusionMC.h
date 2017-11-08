@@ -44,6 +44,10 @@ class SchroedingerDiffusionMC {
     /// \param quantumForce Value of the derivative of the trial wave function over the trial wave function
     void setImportanceSampling(bool active, boost::python::object guidingWF, boost::python::object localEnergy, boost::python::object quantumForce);
 
+    /// \brief Set time step
+    /// \param dt New time step
+    void setTimeStep(double dt);
+
     /// \brief Set minimum x
     /// \param xmin Minimum value of x
     void setXmin(double xmin);
