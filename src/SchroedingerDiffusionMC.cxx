@@ -66,8 +66,7 @@ SchroedingerDiffusionMC::SchroedingerDiffusionMC(boost::python::object potential
   m_dx = dx;
 
   // set time step
-  //m_dt = 0.0001;
-  m_dt = 0.01;
+  m_dt = 0.0001;
 
   // set initial energy values
   m_E0 = 0;
@@ -201,7 +200,7 @@ bool SchroedingerDiffusionMC::step(int n) {
   if (survivors == 0)
     m_alive[n] = false;
   // too many walkers ...
-  if (m_N > 100000) {
+  if (m_N > 500000) {
     cout << "Too many nodes: " << m_N << std::endl;
     exit(-1);
   }
@@ -229,6 +228,16 @@ bool SchroedingerDiffusionMC::stepImportanceSampling(int n) {
   else Fn = quantumForce(xn);
 
 
+  double ELo = 0;
+  double EL = 0;
+  if (m_logGrid) {
+    EL = localEnergy(std::exp(xn));
+    ELo = localEnergy(std::exp(xo));
+  } else {
+    EL = localEnergy(xn);
+    ELo = localEnergy(xo);
+  }
+
   double W = 1;
   if (m_logGrid) {
     W *= std::exp(-std::pow(std::exp(xo) - std::exp(xn) - m_dt*Fn, 2)/(2*m_dt));
@@ -250,22 +259,11 @@ bool SchroedingerDiffusionMC::stepImportanceSampling(int n) {
 
     m_x[n][0] = xn;
 
-    double ELo = 0;
-    double EL = 0;
-    if (m_logGrid) {
-      EL = localEnergy(std::exp(xn));
-      ELo = localEnergy(std::exp(xo));
-    } else {
-      EL = localEnergy(xn);
-      ELo = localEnergy(xo);
-    }
-
-
     double Wb = 1;
     if (m_logGrid) {
-      Wb *= std::exp(-m_dt*std::pow(std::exp(xn), 2)*(0.5*(EL+ELo) - m_E0));
+      Wb = std::exp(-m_dt*(std::pow(std::exp(xn), 2))*(0.5*(EL+ELo) - m_E0));
     } else {
-      Wb *= std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
+      Wb = std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
     }
     m_EL += EL*Wb;
     m_countEL += Wb;
