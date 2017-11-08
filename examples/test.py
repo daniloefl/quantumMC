@@ -24,7 +24,7 @@ def localEnergy(x): # H WF/WF
   return e
 
 c = quantumMC.SchroedingerDiffusionMC(V)
-#c.setImportanceSampling(True, guidingWF, localEnergy, quantumForce)
+c.setImportanceSampling(True, guidingWF, localEnergy, quantumForce)
 c.setXmin(-5.0)
 c.setXmax(5.0)
 c.setDeltaX(0.1)

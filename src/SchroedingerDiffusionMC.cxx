@@ -174,16 +174,15 @@ bool SchroedingerDiffusionMC::step(int n) {
   }
 
   double Wb = 1;
-  double We = 1;
   if (m_logGrid) {
-    Wb *= std::exp(-m_dt*0.5*(std::pow(std::exp(xn), 2) + std::pow(std::exp(xo), 2))*(0.5*(EL+ELo) - m_E0));
-    We *= std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
+    Wb = std::exp(-m_dt*0.5*(std::pow(std::exp(xn), 2) + std::pow(std::exp(xo), 2))*(0.5*(EL+ELo) - m_E0));
+    m_EL += 0.5*(EL+ELo)*(0.5*(std::pow(std::exp(xn), 2)+std::pow(std::exp(xo), 2)))*Wb;
+    m_countEL += Wb*(0.5*(std::pow(std::exp(xn), 2)+std::pow(std::exp(xo), 2)));
   } else {
     Wb *= std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
-    We = Wb;
+    m_EL += 0.5*(EL+ELo)*Wb;
+    m_countEL += Wb;
   }
-  m_EL += EL*We;
-  m_countEL += We;
   int survivors = int(Wb);
   if (Wb - survivors > rFlat(rEngine)) {
     survivors++;
@@ -250,8 +249,8 @@ bool SchroedingerDiffusionMC::stepImportanceSampling(int n) {
     W /= std::exp(-std::pow(std::exp(xn) - std::exp(xo) - m_dt*Fo, 2)/(2*m_dt));
     W *= std::pow(guidingWF(std::exp(xn)), 2);
     W /= std::pow(guidingWF(std::exp(xo)), 2);
-    W *= std::exp(-m_dt*(std::pow(std::exp(xn), 2))*(0.5*(EL+ELo) - m_E0));
-    W /= std::exp(-m_dt*(std::pow(std::exp(xo), 2))*(0.5*(EL+ELo) - m_E0));
+    //W *= std::exp(-m_dt*(std::pow(std::exp(xn), 2))*(0.5*(EL+ELo) - m_E0));
+    //W /= std::exp(-m_dt*(std::pow(std::exp(xo), 2))*(0.5*(EL+ELo) - m_E0));
   } else {
     W *= std::exp(-std::pow(xo - xn - m_dt*Fn, 2)/(2*m_dt));
     W /= std::exp(-std::pow(xn - xo - m_dt*Fo, 2)/(2*m_dt));
@@ -268,17 +267,15 @@ bool SchroedingerDiffusionMC::stepImportanceSampling(int n) {
     m_x[n][0] = xn;
 
     double Wb = 1;
-    double We = 1;
     if (m_logGrid) {
-      //Wb = std::exp(-m_dt*(std::pow(std::exp(xn), 2))*(0.5*(EL+ELo) - m_E0));
       Wb = std::exp(-m_dt*0.5*(std::pow(std::exp(xn), 2) + std::pow(std::exp(xo), 2))*(0.5*(EL+ELo) - m_E0));
-      We = Wb;
+      m_EL += 0.5*(EL+ELo)*(0.5*(std::pow(std::exp(xn), 2)+std::pow(std::exp(xo), 2)))*Wb;
+      m_countEL += Wb*(0.5*(std::pow(std::exp(xn), 2)+std::pow(std::exp(xo), 2)));
     } else {
       Wb = std::exp(-m_dt*(0.5*(EL+ELo) - m_E0));
-      We = Wb;
+      m_EL += 0.5*(EL+ELo)*Wb;
+      m_countEL += Wb;
     }
-    m_EL += EL*We;
-    m_countEL += We;
     int survivors = int(Wb);
     if (Wb - survivors > rFlat(rEngine)) {
       survivors++;
